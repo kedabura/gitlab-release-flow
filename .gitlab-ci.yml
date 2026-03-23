@@ -1,0 +1,93 @@
+stages:
+  - git
+  - build
+  - deploy
+
+variables:
+  EXPOSE_PORT: "8080"
+  DEFAULT_LOG_DIR: "/app/logs"
+
+get_repo:
+  stage: git
+  image: python:3.12
+  rules:
+    - if: '$COMMAND == "get_repo"'
+    - when: manual
+      allow_failure: true
+  script:
+    - pip install --no-cache-dir requests
+    - set -a
+    - . "$PREPROD_ENV_FILE"
+    - set +a
+    - python scripts/get_repo.py
+  variables:
+    PYTHONUNBUFFERED: "1"
+
+get_mr:
+  stage: git
+  image: python:3.12
+  rules:
+    - if: '$COMMAND == "get_mr"'
+    - when: manual
+      allow_failure: true
+  script:
+    - pip install --no-cache-dir requests
+    - set -a
+    - . "$PREPROD_ENV_FILE"
+    - set +a
+    - python scripts/get_mr.py
+  variables:
+    PYTHONUNBUFFERED: "1"
+
+mr_prod:
+  stage: git
+  image: python:3.12
+  rules:
+    - if: '$COMMAND == "mr_prod"'
+    - when: manual
+      allow_failure: true
+  script:
+    - pip install --no-cache-dir requests
+    - set -a
+    - . "$PREPROD_ENV_FILE"
+    - set +a
+    - python scripts/mr_prod.py
+  variables:
+    PYTHONUNBUFFERED: "1"
+
+create_tag:
+  stage: git
+  image: python:3.12
+  rules:
+    - if: '$COMMAND == "create_tag"'
+    - when: manual
+      allow_failure: true
+  script:
+    - pip install --no-cache-dir requests
+    - set -a
+    - . "$PREPROD_ENV_FILE"
+    - set +a
+    - python scripts/create_tag.py
+  variables:
+    PYTHONUNBUFFERED: "1"
+
+containerize:
+  stage: build
+  rules:
+    - when: manual
+  image:
+    name: raf-gitlab-ee-registry.frhc.group/open/docker/bfg-kaniko:latest
+    entrypoint: [""]
+  script:
+    - /kaniko/executor
+      --context "$CI_PROJECT_DIR/release-bot"
+      --dockerfile "$CI_PROJECT_DIR/release-bot/Dockerfile"
+      --destination "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG"
+
+include:
+  - component: $CI_SERVER_FQDN/devops/cicd-components/deploy_docker@2
+    inputs:
+      env: PREP
+      env_file: $PREPROD_ENV_FILE
+      host: $PREPROD_DOCKER_2_HOST
+      host_key: $CI_SSH_PRIVATE_KEY
