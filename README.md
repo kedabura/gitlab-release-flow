@@ -1,68 +1,62 @@
 # Release Orchestrator
 
-Automates release preparation in GitLab: selects repositories, collects merged MRs, creates production MRs, and creates release tags.
+Automates release preparation in GitLab: discovers repositories, collects merged MRs, creates production MRs, and creates release tags.
 
 ## How it works
 
-The service listens for GitLab issue comment webhooks and triggers GitLab pipelines based on commands posted in a release issue.
+1. A user creates a release issue from the template.
+2. A user writes a command in the issue comments.
+3. GitLab sends a webhook to the bot (`app.py`).
+4. The bot triggers a GitLab pipeline with the requested command.
+5. A pipeline job runs one of the scripts:
+   - `get_repo.py`
+   - `get_mr.py`
+   - `mr_prod.py`
+   - `create_tag.py`
+6. The script updates the release issue and optionally sends a Telegram notification.
 
-Flow:
+## Required variables
 
-1. Create a release issue from template
-2. Comment with a command
-3. Webhook triggers pipeline
-4. Pipeline runs one of the scripts
-5. Issue is updated with results
+### Bot container
+- `GITLAB_URL`
+- `ORCHESTRATOR_PROJECT_ID`
+- `TRIGGER_TOKEN`
+- `GROUP_ID`
+- `WEBHOOK_SECRET`
+- `TRIGGER_REF` (optional, default: `master`)
 
-## Supported commands
+### Pipeline / scripts
+- `GITLAB_URL`
+- `GITLAB_TOKEN`
+- `GROUP_ID`
+- `RELEASE_PROJECT_ID`
+- `RELEASE_ISSUE_IID`
+- `TELEGRAM_BOT_TOKEN` (optional)
+- `TELEGRAM_CHAT_ID` (optional)
+- `REPOS_LOOKBACK_DAYS` (optional)
+- `REPO_DISCOVERY_WORKERS` (optional)
+- `REPO_DISCOVERY_MR_PAGE_SIZE` (optional)
+- `CANDIDATES_LOOKBACK_DAYS` (optional)
+
+## Commands
+
+Write one of these commands in a release issue comment:
 
 - `/get_repo` — discover repositories with recent merged MRs in `master`
 - `/get_mr` — collect merged MR candidates for selected repositories
-- `/mr_prod` — create release branches and production merge requests
-- `/create_tag` — create release tags after release MRs are merged into `production`
+- `/mr_prod` — create release branches and production MRs
+- `/create_tag` — create release tags for repositories with merged production MRs
 
-## Project structure
+## Release issue meta fields
 
-```text
-release-orchestrator/
-├── release-bot/
-│   ├── app.py
-│   ├── Dockerfile
-│   └── requirements.txt
-├── scripts/
-│   ├── create_tag.py
-│   ├── get_mr.py
-│   ├── get_repo.py
-│   ├── mr_prod.py
-│   └── lib/
-│       ├── config.py
-│       ├── gitlab_api.py
-│       ├── issue_blocks.py
-│       ├── issue_parser.py
-│       └── telegram_api.py
-└── .gitlab-ci.yml
+The issue template should contain:
 
-##These variables are required by release-bot/app.py:
-```
-GITLAB_URL=https://gitlab.example.com
-ORCHESTRATOR_PROJECT_ID=123
-TRIGGER_TOKEN=your_pipeline_trigger_token
-GROUP_ID=456
-WEBHOOK_SECRET=your_webhook_secret
-TRIGGER_REF=master
-```
-##These variables are required by scripts:
-```
-GITLAB_URL=https://gitlab.example.com
-GITLAB_TOKEN=your_gitlab_api_token
-GROUP_ID=456
-RELEASE_PROJECT_ID=123
-RELEASE_ISSUE_IID=1
-TELEGRAM_BOT_TOKEN=123456:token
-TELEGRAM_CHAT_ID=-1110111011
-REPOS_LOOKBACK_DAYS=7
-REPO_DISCOVERY_WORKERS=8
-REPO_DISCOVERY_MR_PAGE_SIZE=20
-CANDIDATES_LOOKBACK_DAYS=7
-```
+- `Release tag version`
+- `Approvers`
 
+Example:
+
+```md
+## Meta
+- Release tag version: 260325
+- Approvers: yerzhan,nikita
