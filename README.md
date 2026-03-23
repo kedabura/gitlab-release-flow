@@ -41,3 +41,28 @@ release-orchestrator/
 │       ├── issue_parser.py
 │       └── telegram_api.py
 └── .gitlab-ci.yml
+
+##These variables are required by release-bot/app.py:
+```
+GITLAB_URL=https://gitlab.example.com
+ORCHESTRATOR_PROJECT_ID=123
+TRIGGER_TOKEN=your_pipeline_trigger_token
+GROUP_ID=456
+WEBHOOK_SECRET=your_webhook_secret
+TRIGGER_REF=master
+```
+##These variables are required by scripts:
+```
+GITLAB_URL=https://gitlab.example.com
+GITLAB_TOKEN=your_gitlab_api_token
+GROUP_ID=456
+RELEASE_PROJECT_ID=123
+RELEASE_ISSUE_IID=1
+TELEGRAM_BOT_TOKEN=123456:token
+TELEGRAM_CHAT_ID=-1110111011
+REPOS_LOOKBACK_DAYS=7
+REPO_DISCOVERY_WORKERS=8
+REPO_DISCOVERY_MR_PAGE_SIZE=20
+CANDIDATES_LOOKBACK_DAYS=7
+```
+
